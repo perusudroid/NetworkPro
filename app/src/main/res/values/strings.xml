@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">NetworkPro</string>
+    <string name="tst_network_connected">Network is enabled</string>
+    <string name="tst_netword_disconnected">Network is disabled</string>
+    <string name="snk_network_connected">Network is enabled</string>
+    <string name="snk_netword_disconnected">Network is disabled</string>
+    <string name="alt_network_disconnected">No network connection</string>
+    <string name="network_msg">No Internet connection. Make sure that WiFi or cellular mobile data is turned on, then try again</string>
+
+</resources>

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">NetworkChecker</string>
+    <string name="network_disconnected">Network is disconnected</string>
+    <string name="network_connected">Network is connection</string>
+    <string name="tst_netword_disconnected">Network is disabled</string>
+    <string name="alt_network_disconnected">No network connection</string>
+    <string name="error_no_internet">No Internet connection. Make sure that WiFi or cellular mobile data is turned on, then try again</string>
+    <string name="retry">Retry</string>
+    <string name="settings">Settings</string>
+</resources>
