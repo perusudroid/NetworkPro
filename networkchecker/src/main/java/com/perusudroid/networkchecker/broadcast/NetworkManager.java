@@ -89,7 +89,7 @@ public class NetworkManager extends BroadcastReceiver {
                     context.startActivity(intent);
                 }
                 if (networkDisplay.isShowAlert()) {
-                    AlertDialogUtils.getInstance().showAlertDialog(alertContext, networkDisplay.getAlertDisconnectedMsg(), networkDisplay.getAlertDisConnectedMsg(), "Settings", "Exit",0, false, alertDialogListener);
+                    AlertDialogUtils.getInstance().showAlertDialog(alertContext, networkDisplay.getAlertDisconnectedMsg(), networkDisplay.getAlertDisConnectedMsg(), "Settings", "Exit", 0, false, alertDialogListener);
                 }
                 if (networkDisplay.isShowToast()) {
                     ToastUtils.showShortToastSafe(context, networkDisplay.getToastDisConnectedMsg());
@@ -290,4 +290,38 @@ public class NetworkManager extends BroadcastReceiver {
         }
 
     }
+
+    static class Constants {
+
+
+        interface myString {
+            String network_connected = "Network is sconnected";
+            String tst_netword_disconnected = "No network connection";
+            String error_no_internet = "No Internet connection. Make sure that WiFi or cellular mobile data is turned on, then try again";
+            String network_disconnected = "Network is disconnected";
+            String retry = "Retry";
+            String settings = "Settings";
+        }
+
+        interface common {
+            String actionTxt = "Ok";
+            String actionSettings = "Settings";
+            String isDefault = "isDefault";
+        }
+
+        interface bundles {
+            String finishActivity = "finish_activity";
+            String settings = "BUNDLE_SETTINGS";
+            String retry = "BUNDLE_RETRY";
+            String networkMsg = "BUNDLE_NETWORK";
+        }
+
+        interface networkMsg {
+            String CONNECTED = "Network is connected";
+            String DISCONNECTED = "Network is disconnected";
+            String NO_NETWORK = "No Internet connection. Make sure that WiFi or cellular mobile data is turned on, then try again";
+        }
+
+    }
+
 }

@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
                 break;
             case R.id.rdAlert:
                 new NetworkManager.Builder()
-                        // .showAlert(this, this) // show default alert message
+                         //.showAlert(this, this) // show default alert message
                         .showCustomAlert(this, "Network has been disconnected", this) // show custom alert
                         .build();
                 break;

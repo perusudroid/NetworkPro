@@ -44,7 +44,7 @@ public class NoInternetActivity extends AppCompatActivity {
 
     private void getInputs(Bundle extras) {
         if (extras != null) {
-            if (extras.getBoolean(Constants.bundles.settings)) {
+            if (extras.getBoolean(NetworkManager.Constants.bundles.settings)) {
                 if (btnSettings.getVisibility() == View.GONE) {
                     btnSettings.setVisibility(View.VISIBLE);
                 }
@@ -53,7 +53,7 @@ public class NoInternetActivity extends AppCompatActivity {
                     btnSettings.setVisibility(View.GONE);
                 }
             }
-            if (extras.getBoolean(Constants.bundles.retry)) {
+            if (extras.getBoolean(NetworkManager.Constants.bundles.retry)) {
                 if (btnRetry.getVisibility() == View.GONE) {
                     btnRetry.setVisibility(View.VISIBLE);
                 }
@@ -63,10 +63,10 @@ public class NoInternetActivity extends AppCompatActivity {
                 }
             }
 
-            if (extras.getString(Constants.bundles.networkMsg) != null) {
-                tvNoInternet.setText(extras.getString(Constants.bundles.networkMsg));
+            if (extras.getString(NetworkManager.Constants.bundles.networkMsg) != null) {
+                tvNoInternet.setText(extras.getString(NetworkManager.Constants.bundles.networkMsg));
             } else {
-                tvNoInternet.setText(getString(R.string.error_no_internet));
+                tvNoInternet.setText(NetworkManager.Constants.myString.error_no_internet);
             }
 
         }
