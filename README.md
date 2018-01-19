@@ -106,7 +106,7 @@ Add it in your root build.gradle at the end of repositories:
 <b>Step 2. Add the dependency</b>
 
 	dependencies {
-	        implementation 'com.github.Periyanayagam:NetworkPro:1.0'
+	        implementation 'com.github.Periyanayagam:NetworkPro:1.1'
 	}
 
 Kindly check in your device and if any issues, post in issue section. Will be fixed and updated.
