@@ -3,18 +3,29 @@ package com.perusudroid.networkchecker.broadcast;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Looper;
+import android.os.Parcelable;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import com.perusudroid.networkchecker.utils.AlertDialogUtils;
-import com.perusudroid.networkchecker.utils.NetworkUtils;
-import com.perusudroid.networkchecker.utils.SnackbarUtils;
-import com.perusudroid.networkchecker.utils.ToastUtils;
+import com.perusudroid.networkchecker.R;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
@@ -25,12 +36,81 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 public class NetworkManager extends BroadcastReceiver {
 
     private static final String TAG = NetworkManager.class.getSimpleName();
-    private static WeakReference<INetworkListener> iNetworkListener;
-    private static WeakReference<AlertDialogUtils.AlertDialogListener> alertDialogListener;
+    private static INetworkListener iNetworkListener;
+    private static INetworkProDialogListener alertDialogListener;
     private static WeakReference<View> mParentView;
     private static Activity alertContext;
-    private static NetworkDisplay networkDisplay;
+    private static NetworkMsg networkMsg;
+    private static WeakReference<Snackbar> snackbarWeakReference;
+    private static AlertDialog alertDialog;
 
+    private static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity != null) {
+            NetworkInfo[] info = connectivity.getAllNetworkInfo();
+            if (info != null) {
+                for (NetworkInfo networkInfo : info) {
+                    if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void showNetworkSettings(Context mContext) {
+        Intent chooserIntent = Intent.createChooser(getSettingsIntent(Settings.ACTION_DATA_ROAMING_SETTINGS),
+                "Complete action using");
+        List<Intent> networkIntents = new ArrayList<>();
+        networkIntents.add(getSettingsIntent(Settings.ACTION_WIFI_SETTINGS));
+        networkIntents.add(getSettingsIntent(Settings.ACTION_WIFI_SETTINGS));
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, networkIntents.toArray(new Parcelable[]{}));
+        chooserIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        startActivityBySettings(mContext, chooserIntent);
+    }
+
+    private static Intent getSettingsIntent(String settings) {
+        return new Intent(settings);
+    }
+
+    private static void startActivityBySettings(Context context, Intent intent) {
+        context.startActivity(intent);
+    }
+
+    public static void dismissDialog() {
+        if (alertDialog != null) {
+            alertDialog.dismiss();
+        }
+    }
+
+    private static void dismissSnackbar() {
+        if (snackbarWeakReference != null && snackbarWeakReference.get() != null) {
+            snackbarWeakReference.get().dismiss();
+            snackbarWeakReference = null;
+        }
+    }
+
+    private static void showSnackbar(View parent, CharSequence text, int duration, int textColor, int bgColor,
+                                     CharSequence actionText, int actionTextColor, View.OnClickListener listener) {
+        switch (duration) {
+            default:
+            case Snackbar.LENGTH_SHORT:
+            case Snackbar.LENGTH_LONG:
+                snackbarWeakReference = new WeakReference<>(Snackbar.make(parent, text, duration));
+                break;
+            case Snackbar.LENGTH_INDEFINITE:
+                snackbarWeakReference = new WeakReference<>(Snackbar.make(parent, text, Snackbar.LENGTH_INDEFINITE).setDuration(duration));
+        }
+        View view = snackbarWeakReference.get().getView();
+        ((TextView) view.findViewById(R.id.snackbar_text)).setTextColor(textColor);
+        view.setBackgroundColor(bgColor);
+        if (actionText != null && actionText.length() > 0 && listener != null) {
+            snackbarWeakReference.get().setActionTextColor(actionTextColor);
+            snackbarWeakReference.get().setAction(actionText, listener);
+        }
+        snackbarWeakReference.get().show();
+    }
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -44,32 +124,32 @@ public class NetworkManager extends BroadcastReceiver {
     private void pushToSubscribers(final Context context) {
 
 
-        if (NetworkUtils.isNetworkAvailable(context)) {
+        if (isNetworkAvailable(context)) {
             //connected
             if (iNetworkListener != null) {
-                iNetworkListener.get().onNetworkConnected();
+                iNetworkListener.onNetworkConnected();
             }
 
-            if (networkDisplay != null) {
-                if (networkDisplay.isShowAlert()) {
-                    AlertDialogUtils.dismissDialog();
+            if (networkMsg != null) {
+                if (networkMsg.isShowAlert()) {
+                    dismissDialog();
                 }
-                if (networkDisplay.isShowPage()) {
+                if (networkMsg.isShowPage()) {
                     Intent intent = new Intent(Constants.bundles.finishActivity);
                     context.sendBroadcast(intent);
                 }
-                if (networkDisplay.isShowToast()) {
-                    ToastUtils.showShortToastSafe(context, networkDisplay.getToastConnectedMsg());
+                if (networkMsg.isShowToast()) {
+                    Toast.makeText(context, networkMsg.getToastConnectedMsg(), Toast.LENGTH_SHORT).show();
                 }
-                if (networkDisplay.isShowSnack()) {
-                    SnackbarUtils.showIndefiniteSnackbar(mParentView.get().getRootView(), networkDisplay.getSnackConnectedMsg(), 3000,
-                            networkDisplay.getSnackConnectedTextColor(),
-                            networkDisplay.getSnackBackgroundColor(),
+                if (networkMsg.isShowSnack()) {
+                    showSnackbar(mParentView.get().getRootView(), networkMsg.getSnackConnectedMsg(), 3000,
+                            networkMsg.getSnackConnectedTextColor(),
+                            networkMsg.getSnackBackgroundColor(),
                             Constants.common.actionTxt,
-                            networkDisplay.getSnackActionTextColor(), new View.OnClickListener() {
+                            networkMsg.getSnackActionTextColor(), new View.OnClickListener() {
                                 @Override
                                 public void onClick(View view) {
-                                    SnackbarUtils.dismissSnackbar();
+                                    dismissSnackbar();
                                 }
                             });
                 }
@@ -77,35 +157,43 @@ public class NetworkManager extends BroadcastReceiver {
         } else {
             //disconnected
             if (iNetworkListener != null) {
-                iNetworkListener.get().onNetworkDisConnected();
+                iNetworkListener.onNetworkDisConnected();
             }
-            if (networkDisplay != null) {
-                if (networkDisplay.isShowPage()) {
+            if (networkMsg != null) {
+                if (networkMsg.isShowPage()) {
                     Intent intent = new Intent(context, NoInternetActivity.class);
-                    intent.putExtra(Constants.bundles.settings, networkDisplay.isSettingsEnabled());
-                    intent.putExtra(Constants.bundles.retry, networkDisplay.isRetryEnabled());
-                    intent.putExtra(Constants.bundles.networkMsg, networkDisplay.getNetworkMessage());
+                    intent.putExtra(Constants.bundles.settings, networkMsg.isSettingsEnabled());
+                    intent.putExtra(Constants.bundles.retry, networkMsg.isRetryEnabled());
+                    intent.putExtra(Constants.bundles.networkMsg, networkMsg.getNetworkMessage());
                     intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 }
-                if (networkDisplay.isShowAlert()) {
-                    AlertDialogUtils.getInstance().showAlertDialog(alertContext, networkDisplay.getAlertDisconnectedMsg(), networkDisplay.getAlertDisConnectedMsg(), "Settings", "Exit", 0, false, alertDialogListener);
+                if (networkMsg.isShowAlert()) {
+                    showAlertDialog(alertContext,
+                            networkMsg.getAlertDisconnectedMsg(),
+                            networkMsg.getAlertDisConnectedMsg(),
+                            "Settings",
+                            "Exit",
+                            0,
+                            false,
+                            alertDialogListener);
                 }
-                if (networkDisplay.isShowToast()) {
-                    ToastUtils.showShortToastSafe(context, networkDisplay.getToastDisConnectedMsg());
+                if (networkMsg.isShowToast()) {
+                    Toast.makeText(context, networkMsg.getToastDisConnectedMsg(), Toast.LENGTH_SHORT).show();
                 }
-                if (networkDisplay.isShowSnack()) {
-                    SnackbarUtils.showIndefiniteSnackbar(mParentView.get().getRootView(),
-                            networkDisplay.getSnackDisConnectedMsg(),
+                if (networkMsg.isShowSnack()) {
+
+                    showSnackbar(mParentView.get().getRootView(),
+                            networkMsg.getSnackDisConnectedMsg(),
                             10000,
-                            networkDisplay.getSnackDisconnectedTextColor(),
-                            networkDisplay.getSnackBackgroundColor(),
+                            networkMsg.getSnackDisconnectedTextColor(),
+                            networkMsg.getSnackBackgroundColor(),
                             Constants.common.actionSettings,
-                            networkDisplay.getSnackActionTextColor(),
+                            networkMsg.getSnackActionTextColor(),
                             new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                    NetworkUtils.showNetworkSettings(context);
+                                    showNetworkSettings(context);
                                 }
                             });
                 }
@@ -113,14 +201,89 @@ public class NetworkManager extends BroadcastReceiver {
         }
     }
 
+    public void showAlertDialog(final Activity context, String title, String message, String positive, String negative, final int from, final boolean isCancelable, final INetworkProDialogListener alertDialogListener) {
+
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+
+        if (!TextUtils.isEmpty(title))
+            alertDialogBuilder.setTitle(title);
+        if (!TextUtils.isEmpty(message))
+            alertDialogBuilder.setMessage(message);
+
+        if (!TextUtils.isEmpty(positive)) {
+            alertDialogBuilder.setPositiveButton(positive,
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface arg0, int arg1) {
+
+                            if (alertDialogListener != null) {
+                                showNetworkSettings(context);
+                                //alertDialogListener.onPositiveClick(alertDialog, from);
+                            }
+                            //alertDialog.dismiss();
+                        }
+                    });
+        }
+        if (!TextUtils.isEmpty(negative)) {
+            alertDialogBuilder.setNegativeButton(negative,
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface arg0, int arg1) {
+                            if (alertDialogListener != null) {
+                                alertDialogListener.onNegativeClick(alertDialog, from);
+                            }
+                          // alertDialog.dismiss();
+                        }
+                    });
+        }
+
+        try {
+            new Thread() {
+                @Override
+                public void run() {
+                    Looper.prepare();
+                    alertDialog = alertDialogBuilder.create();
+                    alertDialog.setCancelable(isCancelable);
+                    try {
+                        alertDialog.show();
+                    } catch (Exception e) {
+
+                    }
+                    Looper.loop();
+                }
+            }.start();
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
+
+    }
 
     public static class Builder {
 
-        private WeakReference<INetworkListener> iNetworkListener;
-        private WeakReference<AlertDialogUtils.AlertDialogListener> alertDialogListener;
-        private NetworkDisplay networkDisplay = new NetworkDisplay();
+        private INetworkListener iNetworkListener;
+        private INetworkProDialogListener alertDialogListener;
+        private NetworkMsg networkMsg = new NetworkMsg();
         private View mParentView;
         private Activity activity;
+
+        public Builder() {
+
+        }
+
+
+        @NonNull
+        public Builder checkonStart(Activity activity, INetworkProDialogListener alertDialogListener) {
+            Log.d(TAG, "checkonStart: "+ !isNetworkAvailable(activity));
+            if(!isNetworkAvailable(activity)){
+                this.activity = activity;
+                this.alertDialogListener = alertDialogListener;
+                networkMsg.setShowAlert(true);
+                networkMsg.setAlertDisconnectedMsg(Constants.networkMsg.DISCONNECTED);
+            }
+
+            return this;
+        }
 
         /**
          * Implement INetworkListener interface and pass to callback
@@ -130,7 +293,7 @@ public class NetworkManager extends BroadcastReceiver {
          */
         @NonNull
         public Builder callback(INetworkListener iNetworkListener) {
-            this.iNetworkListener = new WeakReference<>(iNetworkListener);
+            this.iNetworkListener = iNetworkListener;
             return this;
         }
 
@@ -140,14 +303,14 @@ public class NetworkManager extends BroadcastReceiver {
          * <p>
          *
          * @param context             - Activity's context
-         * @param alertDialogListener - activity where AlertDialogUtils.AlertDialogListener is implemented
+         * @param alertDialogListener - activity where INetworkProDialogListener is implemented
          */
         @NonNull
-        public Builder showAlert(Context context, AlertDialogUtils.AlertDialogListener alertDialogListener) {
+        public Builder showAlert(Context context, INetworkProDialogListener alertDialogListener) {
             this.activity = (Activity) context;
-            this.alertDialogListener = new WeakReference<>(alertDialogListener);
-            networkDisplay.setShowAlert(true);
-            networkDisplay.setAlertDisconnectedMsg(Constants.networkMsg.DISCONNECTED);
+            this.alertDialogListener = alertDialogListener;
+            networkMsg.setShowAlert(true);
+            networkMsg.setAlertDisconnectedMsg(Constants.networkMsg.DISCONNECTED);
             return this;
         }
 
@@ -157,14 +320,14 @@ public class NetworkManager extends BroadcastReceiver {
          *
          * @param context             - Activity's context
          * @param alertMsg            - Your own message to show on network disconnected
-         * @param alertDialogListener - activity where AlertDialogUtils.AlertDialogListener is implemented
+         * @param alertDialogListener - activity where INetworkProDialogListener is implemented
          */
         @NonNull
-        public Builder showCustomAlert(Context context, String alertMsg, AlertDialogUtils.AlertDialogListener alertDialogListener) {
+        public Builder showCustomAlert(Context context, String alertMsg, INetworkProDialogListener alertDialogListener) {
             this.activity = (Activity) context;
-            this.alertDialogListener = new WeakReference<>(alertDialogListener);
-            networkDisplay.setShowAlert(true);
-            networkDisplay.setAlertDisconnectedMsg(alertMsg);
+            this.alertDialogListener = alertDialogListener;
+            networkMsg.setShowAlert(true);
+            networkMsg.setAlertDisconnectedMsg(alertMsg);
             return this;
         }
 
@@ -175,9 +338,9 @@ public class NetworkManager extends BroadcastReceiver {
          **/
         @NonNull
         public Builder showMessage() {
-            networkDisplay.setShowToast(true);
-            networkDisplay.setToastConnectedMsg(Constants.networkMsg.CONNECTED);
-            networkDisplay.setToastDisConnectedMsg(Constants.networkMsg.DISCONNECTED);
+            networkMsg.setShowToast(true);
+            networkMsg.setToastConnectedMsg(Constants.networkMsg.CONNECTED);
+            networkMsg.setToastDisConnectedMsg(Constants.networkMsg.DISCONNECTED);
             return this;
         }
 
@@ -190,9 +353,9 @@ public class NetworkManager extends BroadcastReceiver {
          **/
         @NonNull
         public Builder showCustomMessage(String connectedMsg, String disconnectedMsg) {
-            networkDisplay.setShowToast(true);
-            networkDisplay.setToastConnectedMsg(connectedMsg);
-            networkDisplay.setToastDisConnectedMsg(disconnectedMsg);
+            networkMsg.setShowToast(true);
+            networkMsg.setToastConnectedMsg(connectedMsg);
+            networkMsg.setToastDisConnectedMsg(disconnectedMsg);
             return this;
         }
 
@@ -207,13 +370,13 @@ public class NetworkManager extends BroadcastReceiver {
         public Builder showSnack(Context mContext) {
             Activity activity = (AppCompatActivity) mContext;
             this.mParentView = activity.getWindow().getDecorView().findViewById(android.R.id.content);
-            networkDisplay.setShowSnack(true);
-            networkDisplay.setSnackConnectedMsg(Constants.networkMsg.CONNECTED);
-            networkDisplay.setSnackDisConnectedMsg(Constants.networkMsg.DISCONNECTED);
-            networkDisplay.setSnackBackgroundColor(Color.WHITE);
-            networkDisplay.setSnackActionTextColor(Color.BLACK);
-            networkDisplay.setSnackConnectedTextColor(Color.GRAY);
-            networkDisplay.setSnackDisconnectedTextColor(Color.RED);
+            networkMsg.setShowSnack(true);
+            networkMsg.setSnackConnectedMsg(Constants.networkMsg.CONNECTED);
+            networkMsg.setSnackDisConnectedMsg(Constants.networkMsg.DISCONNECTED);
+            networkMsg.setSnackBackgroundColor(Color.WHITE);
+            networkMsg.setSnackActionTextColor(Color.BLACK);
+            networkMsg.setSnackConnectedTextColor(Color.GRAY);
+            networkMsg.setSnackDisconnectedTextColor(Color.RED);
             return this;
         }
 
@@ -234,13 +397,13 @@ public class NetworkManager extends BroadcastReceiver {
         public Builder showCustomSnack(Context mContext, String connectedMsg, String disconnectedMsg, int backgroundColor, int connectedTextColor, int disconnectedTextColor, int snackActionTextColor) {
             Activity activity = (AppCompatActivity) mContext;
             this.mParentView = activity.getWindow().getDecorView().findViewById(android.R.id.content);
-            networkDisplay.setShowSnack(true);
-            networkDisplay.setSnackConnectedMsg(connectedMsg);
-            networkDisplay.setSnackDisConnectedMsg(disconnectedMsg);
-            networkDisplay.setSnackBackgroundColor(backgroundColor);
-            networkDisplay.setSnackActionTextColor(snackActionTextColor);
-            networkDisplay.setSnackConnectedTextColor(connectedTextColor);
-            networkDisplay.setSnackDisconnectedTextColor(disconnectedTextColor);
+            networkMsg.setShowSnack(true);
+            networkMsg.setSnackConnectedMsg(connectedMsg);
+            networkMsg.setSnackDisConnectedMsg(disconnectedMsg);
+            networkMsg.setSnackBackgroundColor(backgroundColor);
+            networkMsg.setSnackActionTextColor(snackActionTextColor);
+            networkMsg.setSnackConnectedTextColor(connectedTextColor);
+            networkMsg.setSnackDisconnectedTextColor(disconnectedTextColor);
             return this;
         }
 
@@ -250,10 +413,10 @@ public class NetworkManager extends BroadcastReceiver {
          **/
         @NonNull
         public Builder loadPage() {
-            networkDisplay.setShowPage(true);
-            networkDisplay.setNetworkMessage(Constants.networkMsg.NO_NETWORK);
-            networkDisplay.setRetryEnabled(true);
-            networkDisplay.setSettingsEnabled(true);
+            networkMsg.setShowPage(true);
+            networkMsg.setNetworkMessage(Constants.networkMsg.NO_NETWORK);
+            networkMsg.setRetryEnabled(true);
+            networkMsg.setSettingsEnabled(true);
             return this;
         }
 
@@ -267,10 +430,10 @@ public class NetworkManager extends BroadcastReceiver {
          **/
         @NonNull
         public Builder loadCustomPage(String networkMessage, boolean retryEnabled, boolean settingsEnabled) {
-            networkDisplay.setShowPage(true);
-            networkDisplay.setNetworkMessage(networkMessage);
-            networkDisplay.setRetryEnabled(retryEnabled);
-            networkDisplay.setSettingsEnabled(settingsEnabled);
+            networkMsg.setShowPage(true);
+            networkMsg.setNetworkMessage(networkMessage);
+            networkMsg.setRetryEnabled(retryEnabled);
+            networkMsg.setSettingsEnabled(settingsEnabled);
             return this;
         }
 
@@ -285,7 +448,10 @@ public class NetworkManager extends BroadcastReceiver {
             NetworkManager.alertDialogListener = alertDialogListener;
             NetworkManager.mParentView = new WeakReference<>(mParentView);
             NetworkManager.alertContext = activity;
-            NetworkManager.networkDisplay = networkDisplay;
+            NetworkManager.networkMsg = networkMsg;
+            if(!isNetworkAvailable(activity)){
+                networkManager.pushToSubscribers(activity);
+            }
             return networkManager;
         }
 
@@ -318,7 +484,7 @@ public class NetworkManager extends BroadcastReceiver {
 
         interface networkMsg {
             String CONNECTED = "Network is connected";
-            String DISCONNECTED = "Network is disconnected";
+            String DISCONNECTED = "Internet is not enabled. Do you want to go to settings menu?";
             String NO_NETWORK = "No Internet connection. Make sure that WiFi or cellular mobile data is turned on, then try again";
         }
 

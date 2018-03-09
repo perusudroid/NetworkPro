@@ -4,7 +4,7 @@ package com.perusudroid.networkchecker.broadcast;
  * Created by Perusudroid on 09-01-2018.
  */
 
-public class NetworkDisplay {
+public class NetworkMsg {
 
     private boolean showToast = false;
     private boolean showAlert = false;

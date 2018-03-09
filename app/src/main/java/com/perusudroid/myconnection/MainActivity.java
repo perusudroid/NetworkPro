@@ -8,11 +8,10 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.perusudroid.networkchecker.broadcast.INetworkListener;
+import com.perusudroid.networkchecker.broadcast.INetworkProDialogListener;
 import com.perusudroid.networkchecker.broadcast.NetworkManager;
-import com.perusudroid.networkchecker.utils.AlertDialogUtils;
-import com.perusudroid.networkchecker.utils.NetworkUtils;
 
-public class MainActivity extends AppCompatActivity implements INetworkListener, AlertDialogUtils.AlertDialogListener, RadioGroup.OnCheckedChangeListener {
+public class MainActivity extends AppCompatActivity implements INetworkListener, INetworkProDialogListener, RadioGroup.OnCheckedChangeListener {
 
 
     private RadioGroup radioGroup;
@@ -25,6 +24,14 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
         setAssets();
     }
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        new NetworkManager.Builder()
+                .showAlert(this, this) // show default alert message
+                .build();
+    }
 
     private void bindViews() {
         radioGroup = findViewById(R.id.rdoGrp);
@@ -65,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
 
     @Override
     public void onPositiveClick(AlertDialog alertDialog, int from) {
-        NetworkUtils.showNetworkSettings(MainActivity.this);
+        Toast.makeText(this, "Replace with your action!", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -75,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
 
     @Override
     public void onNeutralClick(AlertDialog alertDialog, int from) {
-
+        finish();
     }
 
     /*
@@ -107,8 +114,8 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
                 break;
             case R.id.rdAlert:
                 new NetworkManager.Builder()
-                         //.showAlert(this, this) // show default alert message
-                        .showCustomAlert(this, "Network has been disconnected", this) // show custom alert
+                        //.showAlert(this, this) // show default alert message
+                        .showCustomAlert(this, "Internet is not enabled. Do you want to go to settings menu?", this) // show custom alert
                         .build();
                 break;
             case R.id.rdPage:
@@ -117,8 +124,6 @@ public class MainActivity extends AppCompatActivity implements INetworkListener,
                         //.loadCustomPage(Constants.networkMsg.DISCONNECTED_PAGE, false, true) //load activity with custom message
                         .build();
                 break;
-            default:
-
         }
     }
 

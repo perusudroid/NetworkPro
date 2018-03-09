@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MyConnection.iml" filepath="$PROJECT_DIR$/MyConnection.iml" />
+      <module fileurl="file://C:\Users\Intel\AndroidStudioProjects\NetworkPro\MyConnection.iml" filepath="C:\Users\Intel\AndroidStudioProjects\NetworkPro\MyConnection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/NetworkPro.iml" filepath="$PROJECT_DIR$/.idea/NetworkPro.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/networkchecker/networkchecker.iml" filepath="$PROJECT_DIR$/networkchecker/networkchecker.iml" />
     </modules>

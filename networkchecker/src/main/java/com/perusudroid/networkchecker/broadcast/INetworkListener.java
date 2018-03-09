@@ -6,6 +6,5 @@ package com.perusudroid.networkchecker.broadcast;
 
 public interface INetworkListener {
     void onNetworkConnected();
-
     void onNetworkDisConnected();
 }

@@ -3,6 +3,8 @@
     <!-- Base application theme. -->
     <style name="myDialog" parent="Theme.AppCompat.Dialog">
         <item name="android:windowNoTitle">true</item>
+        <item name="android:textColor">#E5804C</item>
+        <item name="android:textSize">10.0sp</item>
     </style>
 
 </resources>
